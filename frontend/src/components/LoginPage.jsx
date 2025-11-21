@@ -18,15 +18,25 @@ const LoginPage = () => {
       return;
     }
 
+    console.log('📝 Login form submitted with name:', name.trim());
     setLoading(true);
     setError('');
 
-    const result = await login(name.trim());
-    
-    if (result.success) {
-      navigate('/home');
-    } else {
-      setError(result.error);
+    try {
+      const result = await login(name.trim());
+      console.log('📊 Login result:', result);
+      
+      if (result.success) {
+        console.log('✅ Login successful, navigating to /home');
+        navigate('/home');
+      } else {
+        console.error('❌ Login failed:', result.error);
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('❌ Unexpected error in handleLogin:', err);
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };

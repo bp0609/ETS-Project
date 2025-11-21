@@ -30,15 +30,20 @@ export const UserProvider = ({ children }) => {
 
   const login = async (name) => {
     try {
+      console.log('🔐 Attempting login for:', name);
       const response = await apiLogin(name);
+      console.log('✅ Login response:', response);
       const userData = response.user;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+      console.log('✅ User data saved:', userData);
       return { success: true, user: userData };
     } catch (error) {
+      console.error('❌ Login error:', error);
+      console.error('Error response:', error.response);
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Login failed' 
+        error: error.response?.data?.detail || error.message || 'Login failed. Check if backend is running.' 
       };
     }
   };

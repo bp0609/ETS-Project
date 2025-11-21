@@ -78,7 +78,8 @@ const Message = ({ message }) => {
           >
             <p className="text-sm font-medium text-gray-800 mb-1">
               {displayInfo.name}
-              {isTeacher && <span className="ml-2 text-xs px-2 py-0.5 bg-purple-200 text-purple-700 rounded">Teacher</span>}
+              {' '}
+              {isTeacher && <span className="text-xs px-2 py-0.5 bg-purple-200 text-purple-700 rounded">Instructor</span>}
             </p>
             <div className="text-gray-900 prose prose-sm max-w-none">
               <ReactMarkdown

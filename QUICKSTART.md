@@ -3,17 +3,22 @@
 ## Prerequisites
 - Python 3.8+ installed ✅
 - Node.js 16+ installed ✅
-- Ollama installed ✅
 
-## 1️⃣ Install Ollama Model (3-5 minutes)
+## 1️⃣ Install Ollama & Model (2 minutes)
 
 ```bash
-ollama pull llama3.1:8b
+# Install Ollama (macOS/Linux)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull the model
+ollama pull llama3.2:1b
+# OR for better quality (larger model):
+# ollama pull llama3.1:8b
 ```
 
-## 2️⃣ Start Backend (2 minutes)
+## 2️⃣ Start Backend (1 minute)
 
-Terminal 1:
+**Terminal 1:**
 ```bash
 cd backend
 python3 -m venv venv
@@ -24,9 +29,9 @@ python main.py
 
 ✅ Backend running at http://localhost:8000
 
-## 3️⃣ Start Frontend (2 minutes)
+## 3️⃣ Start Frontend (1 minute)
 
-Terminal 2:
+**Terminal 2:**
 ```bash
 cd frontend
 npm install
@@ -35,64 +40,79 @@ npm run dev
 
 ✅ Frontend running at http://localhost:5173
 
-## 4️⃣ Test It!
+## 4️⃣ Use the App! (1 minute)
 
+### Login
 1. Open http://localhost:5173
-2. Upload any PDF (course notes, lecture slides)
-3. Wait 10-30 seconds
-4. Click a thread and ask a question!
+2. **Teacher**: Enter name `Teacher` and click Login
+3. **Students**: Click "Create New Account" and enter your name
+
+### Upload Lecture (Teacher Only)
+1. Click "Upload Lecture" button
+2. Select a PDF file
+3. Wait 10-30 seconds for AI processing
+4. Lecture appears on homepage with discussion topics
+
+### Ask Questions
+1. Click on any lecture
+2. Click on a discussion thread
+3. Type your question
+4. AI responds in 5-30 seconds with formatted answer
 
 ---
 
-## 📁 Project Structure
+## 🎯 Quick Test
 
-```
-iitgn-discussion-forum/
-├── backend/           # FastAPI + Ollama + SQLite
-│   ├── main.py       # API endpoints
-│   ├── database.py   # Database operations
-│   ├── llm_service.py # AI integration
-│   └── pdf_processor.py # PDF extraction
-└── frontend/         # React + Tailwind
-    └── src/
-        └── components/
-            ├── UploadPage.jsx
-            ├── ThreadsList.jsx
-            ├── ThreadChat.jsx
-            └── Dashboard.jsx
-```
+Upload a sample PDF or use this test:
 
-## 🎯 Key Features
+1. Login as "Teacher"
+2. Upload any PDF (lecture notes, textbook chapter, etc.)
+3. Go back to Home
+4. Click the lecture → Click a thread
+5. Ask: "What are the main points?"
+6. Watch AI respond with markdown-formatted answer!
 
-✨ Upload PDF → AI extracts topics → Auto-creates threads
-💬 Students ask questions → AI answers from course material
-📊 Teacher dashboard shows all activity
+---
 
-## 🐛 Troubleshooting
+## 🐛 Quick Fixes
 
-**Ollama not connecting?**
+### Backend not responding?
 ```bash
+# Make sure Ollama is running
 ollama serve
+
+# Restart backend
+cd backend
+source venv/bin/activate
+python main.py
 ```
 
-**Port already in use?**
+### Can't login?
+- **Teacher**: Use name `Teacher` (case-sensitive)
+- **Students**: Create account first via "Sign Up"
+
+### Port already in use?
 ```bash
 # Kill process on port 8000
 lsof -ti:8000 | xargs kill -9
+
+# Kill process on port 5173
+lsof -ti:5173 | xargs kill -9
 ```
 
-**Dependencies issue?**
-```bash
-# Backend
-cd backend && pip install -r requirements.txt
+---
 
-# Frontend
-cd frontend && npm install
-```
+## ✨ Key Features
+
+- **Simple Login**: Just enter your name (no passwords!)
+- **Role-Based AI**: TA for students, Assistant for teachers
+- **Markdown Responses**: Formatted lists, bold text, code blocks
+- **Short Topics**: AI generates 1-5 word topic names
+- **Context-Aware**: AI remembers last 5 messages
+- **Student Names**: See who asked what
 
 ---
 
 **That's it! You're ready to go! 🚀**
 
 For detailed documentation, see [README.md](README.md)
-

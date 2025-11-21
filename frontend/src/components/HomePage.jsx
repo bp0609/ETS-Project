@@ -75,7 +75,8 @@ const HomePage = () => {
                 </h1>
                 <p className="text-sm text-gray-600">
                   Welcome, <span className="font-semibold">{user?.name}</span>
-                  {isTeacher() && <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded">Teacher</span>}
+                  {' '}
+                  {isTeacher() && <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded">Instructor</span>}
                 </p>
               </div>
             </div>
