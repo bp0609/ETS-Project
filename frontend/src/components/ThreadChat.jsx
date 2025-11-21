@@ -128,7 +128,7 @@ const ThreadChat = () => {
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask a question about this topic..."
+              placeholder="Type your message... (use @AI to ask the AI assistant)"
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               disabled={sending}
             />
@@ -144,7 +144,7 @@ const ThreadChat = () => {
               {sending ? (
                 <>
                   <Loader className="w-5 h-5 mr-2 animate-spin" />
-                  Asking AI...
+                  {question.toLowerCase().includes('@ai') ? 'Asking AI...' : 'Sending...'}
                 </>
               ) : (
                 <>
@@ -155,7 +155,8 @@ const ThreadChat = () => {
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            💡 {isTeacher() ? 'AI Assistant can help with quizzes, summaries, and more' : 'AI TA will answer based on the uploaded course material'}
+            💡 Discuss with classmates or mention <span className="font-semibold text-indigo-600">@AI</span> to get AI help
+            {isTeacher() && <span className="ml-2">(AI Assistant can create quizzes, summaries, etc.)</span>}
           </p>
         </form>
       </div>

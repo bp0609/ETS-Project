@@ -273,7 +273,7 @@ async def get_thread_messages(thread_id: int):
 @app.post("/api/threads/{thread_id}/ask")
 async def ask_question(thread_id: int, request: AskQuestionRequest):
     """
-    Post a question and get AI response (role-based)
+    Post a message. AI responds only if @AI is mentioned
     """
     try:
         # Verify thread exists
@@ -281,47 +281,60 @@ async def ask_question(thread_id: int, request: AskQuestionRequest):
         if not thread:
             raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Get course text
-        course = db.get_course(thread["course_id"])
-        if not course:
-            raise HTTPException(status_code=404, detail="Course not found")
-        
         # Get user information
         user = db.get_user_by_id(request.user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Get thread history (last 10 messages for context)
-        all_messages = db.get_messages_by_thread(thread_id)
-        thread_history = all_messages[-10:] if len(all_messages) > 10 else all_messages
-        
-        # Save user's question/request
+        # Save user's message
         user_msg_id = db.create_message(
             thread_id=thread_id,
             user_id=user["id"],
             sender_type=user["role"],
             content=request.question
         )
-        print(f"💬 {user['role'].capitalize()} message saved (ID: {user_msg_id})")
+        print(f"💬 {user['name']} ({user['role']}) message saved (ID: {user_msg_id})")
         
-        # Generate AI answer with role-based prompt
-        print(f"🤖 Generating AI response for {user['role']}...")
-        ai_answer = llm_service.answer_question(
-            thread_topic=thread["topic"],
-            course_text=course["pdf_text"],
-            question=request.question,
-            user_role=user["role"],
-            thread_history=thread_history
-        )
+        # Check if AI should respond (if @AI is mentioned)
+        should_respond = llm_service.should_ai_respond(request.question)
         
-        # Save AI response (no user_id for AI messages)
-        ai_msg_id = db.create_message(
-            thread_id=thread_id,
-            user_id=None,
-            sender_type="ai",
-            content=ai_answer
-        )
-        print(f"✅ AI response saved (ID: {ai_msg_id})")
+        ai_msg_id = None
+        if should_respond:
+            # Get course text
+            course = db.get_course(thread["course_id"])
+            if not course:
+                raise HTTPException(status_code=404, detail="Course not found")
+            
+            # Get thread history (last 10 messages for context)
+            all_messages = db.get_messages_by_thread(thread_id)
+            thread_history = all_messages[-10:] if len(all_messages) > 10 else all_messages
+            
+            # Remove @AI mention from the question for cleaner processing
+            clean_question = request.question
+            for trigger in ['@AI', '@ai', '@ AI', '@ ai']:
+                clean_question = clean_question.replace(trigger, '').strip()
+            
+            # Generate AI answer with role-based prompt
+            print(f"🤖 @AI mentioned - Generating AI response for {user['name']}...")
+            ai_answer = llm_service.answer_question(
+                thread_topic=thread["topic"],
+                course_text=course["pdf_text"],
+                question=clean_question,
+                user_role=user["role"],
+                thread_history=thread_history,
+                asker_name=user["name"]
+            )
+            
+            # Save AI response (no user_id for AI messages)
+            ai_msg_id = db.create_message(
+                thread_id=thread_id,
+                user_id=None,
+                sender_type="ai",
+                content=ai_answer
+            )
+            print(f"✅ AI response saved (ID: {ai_msg_id})")
+        else:
+            print(f"📝 No @AI mention - message posted without AI response")
         
         # Get updated messages
         messages = db.get_messages_by_thread(thread_id)
@@ -330,13 +343,14 @@ async def ask_question(thread_id: int, request: AskQuestionRequest):
             "success": True,
             "user_message_id": user_msg_id,
             "ai_message_id": ai_msg_id,
+            "ai_responded": should_respond,
             "messages": messages
         }
     
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
 
 @app.get("/api/courses/{course_id}/dashboard")
 async def get_dashboard(course_id: int):

@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 venv/
 # Python bytecode/cache
 __pycache__/
+
+# SQLite database file
+**/*/data.db

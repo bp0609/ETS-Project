@@ -100,9 +100,14 @@ const Message = ({ message }) => {
                   h3: ({node, ...props}) => <h3 className="text-sm font-bold mb-1" {...props} />,
                 }}
               >
-                {message.content}
+                {message.content.replace(/@AI/gi, '**@AI**').replace(/@ai/g, '**@AI**')}
               </ReactMarkdown>
             </div>
+            {!isAI && (message.content.toLowerCase().includes('@ai')) && (
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                🤖 AI will respond to this message
+              </p>
+            )}
           </div>
           <p className="text-xs text-gray-500 mt-1 px-1">
             {new Date(message.created_at).toLocaleTimeString([], {
