@@ -45,12 +45,13 @@ STUDENT_TA_ROLE = """You are a friendly and helpful Teaching Assistant (TA) for 
 
 STUDENT_INSTRUCTIONS = """📋 Instructions:
 1. ANSWER THE CURRENT QUESTION - this is your PRIMARY TASK
-2. Use ONLY information from the course material
-3. Be clear, friendly, and easy to understand
-4. Previous conversation is ONLY for context (if asker refers to it)
-5. Do NOT repeat or focus on previous answers
-6. Keep answer focused (2-4 paragraphs)
-7. Use markdown: **bold**, lists, `code` for readability"""
+2. Use ONLY information from the course material related to the thread topic
+3. If question is NOT related to the thread topic, respond: "This question is not related to the topic '{thread_topic}'"
+4. Be clear, friendly, and easy to understand
+5. Previous conversation is ONLY for context (if asker refers to it)
+6. Do NOT repeat or focus on previous answers
+7. Keep answer focused (1-4 paragraphs)
+8. Use markdown: **bold**, lists, `code` for readability"""
 
 def get_student_prompt(thread_topic: str, course_text: str, question: str, 
                       history_str: str, asker_name: str) -> str:
@@ -58,17 +59,19 @@ def get_student_prompt(thread_topic: str, course_text: str, question: str,
     
     history_section = f"""
 
-📝 Previous messages in this thread (for context only):
+📝 Previous conversation (for context only):
 {history_str}
 
 ⚠️ Remember: Answer {asker_name}'s CURRENT QUESTION above, not previous messages.""" if history_str else ""
     
     return f"""{STUDENT_TA_ROLE}
 
-DISCUSSION THREAD: "{thread_topic}"
-This thread is specifically about: {thread_topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 THREAD TOPIC: "{thread_topic}"
+This discussion is SPECIFICALLY about: {thread_topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Course material (reference for answers):
+Course material for this topic (use ONLY this for answers):
 {course_text}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,7 +80,7 @@ Course material (reference for answers):
 {asker_name} asks: {question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{history_section}
 
-{STUDENT_INSTRUCTIONS}
+{STUDENT_INSTRUCTIONS.format(thread_topic=thread_topic)}
 
 Your answer to {asker_name}'s question about "{thread_topic}":"""
 
@@ -99,11 +102,13 @@ TEACHER_CAPABILITIES = """You can help with:
 TEACHER_INSTRUCTIONS = """📋 Instructions:
 1. FULFILL THE CURRENT REQUEST - this is your PRIMARY TASK
 2. Use the course material as your primary reference
-3. Be professional and thorough
-4. For quiz/test questions, provide answers separately at the end
-5. Use markdown formatting for clarity (headers, lists, bold, code blocks)
-6. Previous conversation is context only - focus on the NEW request
-7. If request builds on previous discussion, acknowledge appropriately"""
+3. If request is NOT related to the thread topic, respond: "This request is not related to the topic '{thread_topic}'"
+4. Be professional and thorough
+5. For quiz/test questions, provide answers separately at the end
+6. Use markdown formatting for clarity (headers, lists, bold, code blocks)
+7. Previous conversation is context only - focus on the NEW request
+8. Keep response focused (1-4 paragraphs for explanations, longer for quizzes/summaries)
+9. If request builds on previous discussion, acknowledge appropriately"""
 
 def get_teacher_prompt(course_text: str, request: str, history_str: str, 
                       thread_topic: str, asker_name: str) -> str:
@@ -111,16 +116,19 @@ def get_teacher_prompt(course_text: str, request: str, history_str: str,
     
     history_section = f"""
 
-📝 Previous messages in this thread (for context only):
+📝 Previous conversation (for context only):
 {history_str}
 
 ⚠️ Remember: Fulfill {asker_name}'s CURRENT REQUEST above, not previous messages.""" if history_str else ""
     
     return f"""{TEACHER_ASSISTANT_ROLE}
 
-DISCUSSION THREAD: "{thread_topic}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 THREAD TOPIC: "{thread_topic}"
+This discussion is SPECIFICALLY about: {thread_topic}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Course material (primary reference):
+Course material for this topic (primary reference):
 {course_text}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -131,7 +139,7 @@ Course material (primary reference):
 
 {TEACHER_CAPABILITIES}
 
-{TEACHER_INSTRUCTIONS}
+{TEACHER_INSTRUCTIONS.format(thread_topic=thread_topic)}
 
 Your response to {asker_name}'s request about "{thread_topic}":"""
 

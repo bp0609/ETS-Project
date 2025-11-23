@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 import shutil
@@ -11,6 +12,10 @@ import llm_service
 
 # Initialize FastAPI app
 app = FastAPI(title="IITGN Discussion Forum API", version="1.0.0")
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = "uploaded_pdfs"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Add CORS middleware
 app.add_middleware(
@@ -68,6 +73,15 @@ class DashboardResponse(BaseModel):
     total_threads: int
     total_questions: int
     most_active_thread: Optional[dict]
+
+class CreateAnnouncementRequest(BaseModel):
+    teacher_id: int
+    title: str
+    content: str
+
+class PollVoteRequest(BaseModel):
+    student_id: int
+    understanding_level: str
 
 # API Endpoints
 
@@ -157,6 +171,209 @@ async def get_user(name: str):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error checking user: {str(e)}")
+
+# Announcement Endpoints
+
+@app.post("/api/announcements")
+async def create_announcement(request: CreateAnnouncementRequest):
+    """
+    Create a new announcement (text only, no PDF)
+    """
+    try:
+        # Verify teacher exists
+        user = db.get_user_by_id(request.teacher_id)
+        if not user or user["role"] != "teacher":
+            raise HTTPException(status_code=403, detail="Only teachers can create announcements")
+        
+        # Create announcement
+        announcement_id = db.create_announcement(
+            teacher_id=request.teacher_id,
+            title=request.title,
+            content=request.content,
+            pdf_text=None,
+            has_topics=False
+        )
+        
+        announcement = db.get_announcement(announcement_id)
+        
+        return {
+            "success": True,
+            "announcement": announcement
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating announcement: {str(e)}")
+
+@app.post("/api/announcements/with-pdf")
+async def create_announcement_with_pdf(
+    teacher_id: int = Form(...),
+    title: str = Form(...),
+    content: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """
+    Create an announcement with a PDF file that generates topics
+    """
+    try:
+        # Verify teacher exists
+        user = db.get_user_by_id(teacher_id)
+        if not user or user["role"] != "teacher":
+            raise HTTPException(status_code=403, detail="Only teachers can create announcements")
+        
+        # Validate file type
+        if not file.filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        
+        # Save uploaded file temporarily for processing
+        temp_file_path = f"temp_{file.filename}"
+        with open(temp_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Extract text from PDF
+        print(f"📄 Extracting text from {file.filename}...")
+        pdf_text = pdf_processor.extract_text_from_pdf(temp_file_path)
+        
+        if not pdf_text or len(pdf_text) < 100:
+            os.remove(temp_file_path)
+            raise HTTPException(status_code=400, detail="PDF appears to be empty or text could not be extracted")
+        
+        # Extract topics using LLM
+        print("🤖 Extracting topics with AI...")
+        topics = llm_service.extract_topics(pdf_text)
+        print(f"✅ Extracted {len(topics)} topics")
+        
+        # Save PDF permanently
+        import time
+        timestamp = int(time.time())
+        safe_filename = f"{timestamp}_{file.filename}"
+        pdf_path = os.path.join(UPLOAD_DIR, safe_filename)
+        shutil.move(temp_file_path, pdf_path)
+        print(f"✅ PDF saved to {pdf_path}")
+        
+        # Create announcement with PDF info
+        announcement_id = db.create_announcement(
+            teacher_id=teacher_id,
+            title=title,
+            content=content,
+            pdf_text=pdf_text,
+            pdf_path=pdf_path,
+            pdf_filename=file.filename,
+            has_topics=True
+        )
+        
+        # Create threads for each topic
+        thread_ids = []
+        for i, topic in enumerate(topics, 1):
+            thread_id = db.create_thread(
+                title=f"Discussion: {topic}",
+                topic=topic,
+                announcement_id=announcement_id
+            )
+            thread_ids.append(thread_id)
+        
+        print(f"✅ Created {len(thread_ids)} threads for announcement")
+        
+        announcement = db.get_announcement(announcement_id)
+        threads = db.get_threads_by_announcement(announcement_id)
+        
+        return {
+            "success": True,
+            "announcement": announcement,
+            "topics": topics,
+            "threads": threads
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating announcement with PDF: {str(e)}")
+
+@app.get("/api/announcements")
+async def get_announcements():
+    """
+    Get all announcements
+    """
+    try:
+        announcements = db.get_all_announcements()
+        
+        # For each announcement, get its threads if it has topics
+        for announcement in announcements:
+            if announcement.get("has_topics"):
+                threads = db.get_threads_by_announcement(announcement["id"])
+                announcement["threads"] = threads
+            else:
+                announcement["threads"] = []
+        
+        return {"announcements": announcements}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching announcements: {str(e)}")
+
+@app.get("/api/announcements/{announcement_id}")
+async def get_announcement(announcement_id: int):
+    """
+    Get a specific announcement
+    """
+    try:
+        announcement = db.get_announcement(announcement_id)
+        if not announcement:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        
+        # Get threads if announcement has topics
+        if announcement.get("has_topics"):
+            threads = db.get_threads_by_announcement(announcement_id)
+            announcement["threads"] = threads
+        else:
+            announcement["threads"] = []
+        
+        return {"announcement": announcement}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching announcement: {str(e)}")
+
+@app.get("/api/announcements/{announcement_id}/pdf")
+async def get_pdf(announcement_id: int, download: bool = False):
+    """
+    View or download PDF attached to an announcement
+    download=true for download, false for inline viewing
+    """
+    try:
+        announcement = db.get_announcement(announcement_id)
+        if not announcement:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        
+        if not announcement.get("pdf_path"):
+            raise HTTPException(status_code=404, detail="No PDF attached to this announcement")
+        
+        pdf_path = announcement["pdf_path"]
+        
+        if not os.path.exists(pdf_path):
+            raise HTTPException(status_code=404, detail="PDF file not found on server")
+        
+        # Return the PDF file
+        # If download=true, set filename to trigger download
+        # If download=false, don't set filename to display inline
+        if download:
+            return FileResponse(
+                path=pdf_path,
+                media_type="application/pdf",
+                filename=announcement.get("pdf_filename", "document.pdf")
+            )
+        else:
+            # For inline viewing, don't set filename
+            return FileResponse(
+                path=pdf_path,
+                media_type="application/pdf"
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error accessing PDF: {str(e)}")
 
 @app.post("/api/courses/upload")
 async def upload_course(file: UploadFile = File(...)):
@@ -300,10 +517,15 @@ async def ask_question(thread_id: int, request: AskQuestionRequest):
         
         ai_msg_id = None
         if should_respond:
-            # Get course text
-            course = db.get_course(thread["course_id"])
-            if not course:
-                raise HTTPException(status_code=404, detail="Course not found")
+            # Get PDF text from announcement
+            if not thread.get("announcement_id"):
+                raise HTTPException(status_code=404, detail="No announcement linked to this thread")
+            
+            announcement = db.get_announcement(thread["announcement_id"])
+            if not announcement or not announcement.get("pdf_text"):
+                raise HTTPException(status_code=404, detail="No course material found for this topic")
+            
+            pdf_text = announcement["pdf_text"]
             
             # Get thread history (last 10 messages for context)
             all_messages = db.get_messages_by_thread(thread_id)
@@ -318,7 +540,7 @@ async def ask_question(thread_id: int, request: AskQuestionRequest):
             print(f"🤖 @AI mentioned - Generating AI response for {user['name']}...")
             ai_answer = llm_service.answer_question(
                 thread_topic=thread["topic"],
-                course_text=course["pdf_text"],
+                course_text=pdf_text,
                 question=clean_question,
                 user_role=user["role"],
                 thread_history=thread_history,
@@ -352,64 +574,119 @@ async def ask_question(thread_id: int, request: AskQuestionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
 
-@app.get("/api/courses/{course_id}/dashboard")
-async def get_dashboard(course_id: int):
+# Polling Endpoints
+
+@app.post("/api/topics/{thread_id}/poll")
+async def vote_on_topic(thread_id: int, request: PollVoteRequest):
     """
-    Get dashboard statistics for a course
+    Student votes on their understanding level for a topic
     """
     try:
-        # Verify course exists
-        course = db.get_course(course_id)
-        if not course:
-            raise HTTPException(status_code=404, detail="Course not found")
+        # Verify thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Get dashboard data
-        dashboard_data = db.get_dashboard_data(course_id)
+        # Verify student exists
+        user = db.get_user_by_id(request.student_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if user["role"] != "student":
+            raise HTTPException(status_code=403, detail="Only students can vote on polls")
+        
+        # Validate understanding level
+        if request.understanding_level not in ['complete', 'partial', 'none']:
+            raise HTTPException(status_code=400, detail="Invalid understanding level")
+        
+        # Create or update poll
+        poll_id = db.create_or_update_poll(thread_id, request.student_id, request.understanding_level)
+        
+        # Get updated results
+        results = db.get_poll_results(thread_id)
         
         return {
-            "course_id": course_id,
-            "course_name": course["name"],
-            **dashboard_data
+            "success": True,
+            "poll_id": poll_id,
+            "results": results
         }
     
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching dashboard data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error voting on poll: {str(e)}")
 
-@app.get("/api/courses")
-async def get_all_courses():
+@app.get("/api/topics/{thread_id}/poll")
+async def get_poll_results(thread_id: int, student_id: Optional[int] = None):
     """
-    Get all courses
+    Get poll results for a topic
+    Optionally include student_id to get their current vote
     """
     try:
-        courses = db.get_all_courses()
-        return {"courses": courses}
+        # Verify thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        
+        # Get poll results
+        results = db.get_poll_results(thread_id)
+        
+        response = {
+            "thread_id": thread_id,
+            "results": results
+        }
+        
+        # If student_id provided, get their vote
+        if student_id:
+            student_vote = db.get_student_poll(thread_id, student_id)
+            response["student_vote"] = student_vote
+        
+        return response
+    
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching courses: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching poll results: {str(e)}")
 
-@app.get("/api/lectures")
-async def get_all_lectures():
+@app.get("/api/topics/{thread_id}/helpers")
+async def get_topic_helpers(thread_id: int):
     """
-    Get all lectures (courses) with thread count for homepage
+    Get list of students who understand the topic completely
     """
     try:
-        courses = db.get_all_courses()
+        # Verify thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
         
-        # Add thread count for each course/lecture
-        lectures = []
-        for course in courses:
-            threads = db.get_threads_by_course(course["id"])
-            lectures.append({
-                "id": course["id"],
-                "name": course["name"],
-                "created_at": course["created_at"],
-                "thread_count": len(threads)
-            })
+        # Get students who understand completely
+        helpers = db.get_students_who_understand(thread_id)
         
-        return {"lectures": lectures}
+        return {
+            "thread_id": thread_id,
+            "topic": thread["topic"],
+            "helpers": helpers
+        }
+    
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching lectures: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching helpers: {str(e)}")
+
+# Analytics Endpoint
+
+@app.get("/api/analytics")
+async def get_analytics():
+    """
+    Get comprehensive analytics data for teacher dashboard
+    Returns aggregated statistics on student understanding and engagement
+    """
+    try:
+        analytics_data = db.get_analytics_data()
+        return analytics_data
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching analytics: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

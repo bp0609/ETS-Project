@@ -144,5 +144,9 @@ venv/
 # Python bytecode/cache
 __pycache__/
 
-# SQLite database file
-**/*/data.db
+# Database file for backend
+backend/data.db
+
+# Folder for uploaded PDF files
+backend/uploaded_pdfs/
+

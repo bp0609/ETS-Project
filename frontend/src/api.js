@@ -25,24 +25,7 @@ api.interceptors.response.use(
   }
 );
 
-export const uploadCourse = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  const response = await axios.post(`${API_BASE_URL}/api/courses/upload`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  
-  return response.data;
-};
-
-export const getCourseThreads = async (courseId) => {
-  const response = await api.get(`/api/courses/${courseId}/threads`);
-  return response.data;
-};
-
+// Thread & Discussion APIs
 export const getThreadMessages = async (threadId) => {
   const response = await api.get(`/api/threads/${threadId}/messages`);
   return response.data;
@@ -53,16 +36,6 @@ export const askQuestion = async (threadId, question, userId) => {
     question,
     user_id: userId 
   });
-  return response.data;
-};
-
-export const getDashboardData = async (courseId) => {
-  const response = await api.get(`/api/courses/${courseId}/dashboard`);
-  return response.data;
-};
-
-export const getAllCourses = async () => {
-  const response = await api.get('/api/courses');
   return response.data;
 };
 
@@ -82,9 +55,66 @@ export const getUserByName = async (name) => {
   return response.data;
 };
 
-// Lectures API
-export const getAllLectures = async () => {
-  const response = await api.get('/api/lectures');
+// Announcement APIs
+export const createAnnouncement = async (teacherId, title, content) => {
+  const response = await api.post('/api/announcements', {
+    teacher_id: teacherId,
+    title,
+    content
+  });
+  return response.data;
+};
+
+export const createAnnouncementWithPDF = async (teacherId, title, content, file) => {
+  const formData = new FormData();
+  formData.append('teacher_id', teacherId);
+  formData.append('title', title);
+  formData.append('content', content);
+  formData.append('file', file);
+  
+  const response = await axios.post(`${API_BASE_URL}/api/announcements/with-pdf`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 60000, // 60 second timeout for PDF processing
+  });
+  
+  return response.data;
+};
+
+export const getAllAnnouncements = async () => {
+  const response = await api.get('/api/announcements');
+  return response.data;
+};
+
+export const getAnnouncement = async (announcementId) => {
+  const response = await api.get(`/api/announcements/${announcementId}`);
+  return response.data;
+};
+
+// Polling APIs
+export const voteOnTopic = async (threadId, studentId, understandingLevel) => {
+  const response = await api.post(`/api/topics/${threadId}/poll`, {
+    student_id: studentId,
+    understanding_level: understandingLevel
+  });
+  return response.data;
+};
+
+export const getPollResults = async (threadId, studentId = null) => {
+  const params = studentId ? { student_id: studentId } : {};
+  const response = await api.get(`/api/topics/${threadId}/poll`, { params });
+  return response.data;
+};
+
+export const getTopicHelpers = async (threadId) => {
+  const response = await api.get(`/api/topics/${threadId}/helpers`);
+  return response.data;
+};
+
+// Analytics APIs
+export const getAnalytics = async () => {
+  const response = await api.get('/api/analytics');
   return response.data;
 };
 
