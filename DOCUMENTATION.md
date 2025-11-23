@@ -37,7 +37,7 @@ An AI-powered discussion platform for IIT Gandhinagar that:
 **1. Install Ollama & Model**
 ```bash
 curl -fsSL https://ollama.ai/install.sh | sh
-ollama pull llama3.2:1b
+ollama pull llama3.1:8b
 ```
 
 **2. Start Backend**
@@ -281,8 +281,10 @@ MAX_TOTAL_PROMPT_LENGTH = 30000
 
 **File**: `backend/llm_service.py`
 ```python
-# Change default model
-DEFAULT_MODEL = "llama3.1:8b"  # or llama3.2:1b
+# backend/llm_service.py
+DEFAULT_MODEL = "llama3.1:8b"  # Current (recommended)
+# For faster responses: "llama3.2:1b"
+# For best quality: "llama3.1:70b"
 ```
 
 **File**: `backend/main.py`
@@ -412,18 +414,15 @@ python main.py
 
 ### Performance Tips
 
-**Faster AI Responses**:
+**Change AI Model**:
 ```bash
-# Use smaller model
+# For faster responses (current: llama3.1:8b)
 ollama pull llama3.2:1b
-# Update DEFAULT_MODEL in llm_service.py
-```
+# Edit backend/llm_service.py: DEFAULT_MODEL = "llama3.2:1b"
 
-**Better AI Quality**:
-```bash
-# Use larger model
-ollama pull llama3.1:8b
-# Update DEFAULT_MODEL in llm_service.py
+# For best quality (slower)
+ollama pull llama3.1:70b
+# Edit backend/llm_service.py: DEFAULT_MODEL = "llama3.1:70b"
 ```
 
 ---

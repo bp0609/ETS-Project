@@ -177,7 +177,7 @@ const UploadPage = () => {
           <h3 className="font-semibold text-blue-900 mb-2">What happens next?</h3>
           <ul className="text-sm text-blue-700 space-y-1">
             <li>• AI extracts text from your PDF</li>
-            <li>• 5-10 key topics are automatically identified</li>
+            <li>• 2-6 key topics are automatically identified</li>
             <li>• Discussion threads are created for each topic</li>
             <li>• Students can start asking questions immediately</li>
           </ul>

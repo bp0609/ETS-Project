@@ -10,10 +10,11 @@
 # Install Ollama (macOS/Linux)
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# Pull the model
-ollama pull llama3.2:1b
-# OR for better quality (larger model):
-# ollama pull llama3.1:8b
+# Pull the model (recommended)
+ollama pull llama3.1:8b
+
+# Alternative: Faster but lower quality
+# ollama pull llama3.2:1b
 ```
 
 ## 2️⃣ Start Backend (1 minute)
@@ -107,7 +108,7 @@ lsof -ti:5173 | xargs kill -9
 - **Simple Login**: Just enter your name (no passwords!)
 - **Role-Based AI**: TA for students, Assistant for teachers
 - **Markdown Responses**: Formatted lists, bold text, code blocks
-- **Short Topics**: AI generates 1-5 word topic names
+- **Short Topics**: AI generates 2-6 word topic names
 - **Context-Aware**: AI remembers last 5 messages
 - **Student Names**: See who asked what
 

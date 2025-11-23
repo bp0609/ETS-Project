@@ -10,7 +10,7 @@ import prompts
 
 # Configuration
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "llama3.2:1b"  # Fast model for development
+DEFAULT_MODEL = "llama3.1:8b"  # Production model - good balance of speed and quality
 
 
 # ========================================

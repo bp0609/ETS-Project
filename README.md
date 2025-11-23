@@ -5,8 +5,8 @@ AI-powered discussion platform for IIT Gandhinagar courses with intelligent topi
 ## ⚡ Quick Start
 
 ```bash
-# 1. Install Ollama
-ollama pull llama3.2:1b
+# 1. Install Ollama & Model
+ollama pull llama3.1:8b
 
 # 2. Start Backend (Terminal 1)
 cd backend && python3 -m venv venv && source venv/bin/activate
@@ -83,7 +83,7 @@ Teacher: @AI create a 10-question quiz
 
 **Backend**: Python, FastAPI, SQLite, pdfplumber  
 **Frontend**: React, Vite, Tailwind CSS, react-markdown  
-**AI**: Ollama (llama3.2:1b or llama3.1:8b)  
+**AI**: Ollama (llama3.1:8b - fast & high quality)  
 
 ---
 
@@ -92,7 +92,9 @@ Teacher: @AI create a 10-question quiz
 ### Change AI Model
 ```python
 # backend/llm_service.py
-DEFAULT_MODEL = "llama3.1:8b"  # For better quality
+DEFAULT_MODEL = "llama3.1:8b"  # Current (recommended)
+# Or for faster but lower quality:
+# DEFAULT_MODEL = "llama3.2:1b"
 ```
 
 ### Adjust @AI Triggers
