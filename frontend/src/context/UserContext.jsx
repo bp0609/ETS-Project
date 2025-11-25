@@ -48,9 +48,9 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const signup = async (name) => {
+  const signup = async (name, email, phone) => {
     try {
-      const response = await apiSignup(name);
+      const response = await apiSignup(name, email, phone);
       const userData = response.user;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));

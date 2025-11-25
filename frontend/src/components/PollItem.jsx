@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, Users, CheckCircle, AlertCircle, XCircle, Loader } from 'lucide-react';
 import { voteOnTopic, getPollResults } from '../api';
 
-const PollItem = ({ thread, userId, isTeacher, onOpenThread, onViewHelpers }) => {
+const PollItem = ({ thread, userId, isTeacher, onOpenThread, onViewHelpers, onViewStudentsByLevel }) => {
   const [pollResults, setPollResults] = useState({ complete: 0, partial: 0, none: 0 });
   const [currentVote, setCurrentVote] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -71,20 +71,32 @@ const PollItem = ({ thread, userId, isTeacher, onOpenThread, onViewHelpers }) =>
         {/* Voting Buttons (Students) or Results (Teachers) */}
         {isTeacher ? (
           <div className="flex items-center gap-1 text-xs flex-shrink-0">
-            <div className="flex items-center text-green-600" title="Complete">
+            <button
+              onClick={() => onViewStudentsByLevel(thread, 'complete')}
+              className="flex items-center text-green-600 hover:bg-green-50 px-1.5 py-1 rounded transition-colors"
+              title="Click to view students who completely understood"
+            >
               <CheckCircle className="w-3.5 h-3.5 mr-0.5" />
-              <span>{pollResults.complete}</span>
-            </div>
+              <span className="font-medium">{pollResults.complete}</span>
+            </button>
             <span className="text-gray-300">|</span>
-            <div className="flex items-center text-yellow-600" title="Partial">
+            <button
+              onClick={() => onViewStudentsByLevel(thread, 'partial')}
+              className="flex items-center text-yellow-600 hover:bg-yellow-50 px-1.5 py-1 rounded transition-colors"
+              title="Click to view students who partially understood"
+            >
               <AlertCircle className="w-3.5 h-3.5 mr-0.5" />
-              <span>{pollResults.partial}</span>
-            </div>
+              <span className="font-medium">{pollResults.partial}</span>
+            </button>
             <span className="text-gray-300">|</span>
-            <div className="flex items-center text-red-600" title="None">
+            <button
+              onClick={() => onViewStudentsByLevel(thread, 'none')}
+              className="flex items-center text-red-600 hover:bg-red-50 px-1.5 py-1 rounded transition-colors"
+              title="Click to view students who need help"
+            >
               <XCircle className="w-3.5 h-3.5 mr-0.5" />
-              <span>{pollResults.none}</span>
-            </div>
+              <span className="font-medium">{pollResults.none}</span>
+            </button>
           </div>
         ) : (
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -133,13 +145,15 @@ const PollItem = ({ thread, userId, isTeacher, onOpenThread, onViewHelpers }) =>
           >
             <MessageCircle className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => onViewHelpers(thread)}
-            className="w-8 h-8 rounded-md flex items-center justify-center bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-all"
-            title="View students who can help"
-          >
-            <Users className="w-4 h-4" />
-          </button>
+          {!isTeacher && (
+            <button
+              onClick={() => onViewHelpers(thread)}
+              className="w-8 h-8 rounded-md flex items-center justify-center bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-all"
+              title="View students who can help"
+            >
+              <Users className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

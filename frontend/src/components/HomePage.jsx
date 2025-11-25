@@ -7,6 +7,7 @@ import AnnouncementFeed from './AnnouncementFeed';
 import PollingSidebar from './PollingSidebar';
 import CreateAnnouncementModal from './CreateAnnouncementModal';
 import HelpersModal from './HelpersModal';
+import StudentsListModal from './StudentsListModal';
 
 const HomePage = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -14,7 +15,9 @@ const HomePage = () => {
   const [error, setError] = useState('');
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showHelpersModal, setShowHelpersModal] = useState(false);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedThread, setSelectedThread] = useState(null);
+  const [selectedUnderstandingLevel, setSelectedUnderstandingLevel] = useState(null);
   const navigate = useNavigate();
   const { user, logout, isTeacher } = useUser();
 
@@ -55,6 +58,12 @@ const HomePage = () => {
   const handleViewHelpers = (thread) => {
     setSelectedThread(thread);
     setShowHelpersModal(true);
+  };
+
+  const handleViewStudentsByLevel = (thread, level) => {
+    setSelectedThread(thread);
+    setSelectedUnderstandingLevel(level);
+    setShowStudentsModal(true);
   };
 
   if (loading) {
@@ -169,6 +178,7 @@ const HomePage = () => {
                 isTeacher={isTeacher()}
                 onOpenThread={handleOpenThread}
                 onViewHelpers={handleViewHelpers}
+                onViewStudentsByLevel={handleViewStudentsByLevel}
               />
             </div>
           </div>
@@ -187,6 +197,13 @@ const HomePage = () => {
         isOpen={showHelpersModal}
         onClose={() => setShowHelpersModal(false)}
         thread={selectedThread}
+      />
+
+      <StudentsListModal
+        isOpen={showStudentsModal}
+        onClose={() => setShowStudentsModal(false)}
+        thread={selectedThread}
+        understandingLevel={selectedUnderstandingLevel}
       />
     </div>
   );

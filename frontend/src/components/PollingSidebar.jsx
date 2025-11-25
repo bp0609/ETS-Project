@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle, AlertCircle, XCircle, MessageCircle, Users } from 'lucide-react';
 import PollItem from './PollItem';
 
-const PollingSidebar = ({ announcements, userId, isTeacher, onOpenThread, onViewHelpers }) => {
+const PollingSidebar = ({ announcements, userId, isTeacher, onOpenThread, onViewHelpers, onViewStudentsByLevel }) => {
   const [expandedAnnouncements, setExpandedAnnouncements] = useState({});
 
   // Initialize all announcements as expanded
@@ -48,7 +48,7 @@ const PollingSidebar = ({ announcements, userId, isTeacher, onOpenThread, onView
     <div className="space-y-3">
       {/* Legend - Compact info card */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg shadow-sm border border-indigo-200 p-3">
-        <p className="text-xs font-bold text-gray-800 mb-2">📊 Polling Guide</p>
+        <p className="text-xs font-bold text-gray-800 mb-2">📊 Polling Guide (Understanding Level)</p>
 
         {/* Understanding levels - Compact layout */}
         <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -80,12 +80,14 @@ const PollingSidebar = ({ announcements, userId, isTeacher, onOpenThread, onView
             </div>
             <span className="text-xs text-gray-600">Discuss</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
-              <Users className="w-3 h-3 text-purple-600" />
+          {!isTeacher && (
+            <div className="flex items-center gap-1">
+              <div className="w-5 h-5 rounded bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                <Users className="w-3 h-3 text-purple-600" />
+              </div>
+              <span className="text-xs text-gray-600">Get Help</span>
             </div>
-            <span className="text-xs text-gray-600">Get Help</span>
-          </div>
+          )}
         </div>
       </div>
 
@@ -123,6 +125,7 @@ const PollingSidebar = ({ announcements, userId, isTeacher, onOpenThread, onView
                   isTeacher={isTeacher}
                   onOpenThread={onOpenThread}
                   onViewHelpers={onViewHelpers}
+                  onViewStudentsByLevel={onViewStudentsByLevel}
                 />
               ))}
             </div>

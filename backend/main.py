@@ -20,7 +20,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite and React default ports
+    allow_origins=["*"],  # Allow all origins for network access
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,7 +31,7 @@ app.add_middleware(
 async def startup_event():
     db.init_database()
     print("✅ Database initialized")
-    print("✅ Server ready at http://localhost:8000")
+    print("✅ Server ready and accepting connections from all network interfaces")
 
 # Pydantic models
 class LoginRequest(BaseModel):
@@ -39,6 +39,8 @@ class LoginRequest(BaseModel):
 
 class SignupRequest(BaseModel):
     name: str
+    email: str
+    phone: str
 
 class UserResponse(BaseModel):
     id: int
@@ -131,8 +133,21 @@ async def signup(request: SignupRequest):
         if not request.name or len(request.name.strip()) < 2:
             raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
         
+        # Validate email
+        if not request.email or len(request.email.strip()) < 3 or '@' not in request.email:
+            raise HTTPException(status_code=400, detail="Please provide a valid email address")
+        
+        # Validate phone
+        if not request.phone or len(request.phone.strip()) < 10:
+            raise HTTPException(status_code=400, detail="Please provide a valid phone number (at least 10 digits)")
+        
         # Create new student user
-        user_id = db.create_user(request.name.strip(), "student")
+        user_id = db.create_user(
+            request.name.strip(), 
+            "student", 
+            email=request.email.strip(),
+            phone=request.phone.strip()
+        )
         user = db.get_user_by_id(user_id)
         
         return {
@@ -672,6 +687,36 @@ async def get_topic_helpers(thread_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching helpers: {str(e)}")
+
+@app.get("/api/topics/{thread_id}/students/{understanding_level}")
+async def get_students_by_level(thread_id: int, understanding_level: str):
+    """
+    Get list of students who selected a specific understanding level
+    """
+    try:
+        # Verify thread exists
+        thread = db.get_thread(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        
+        # Validate understanding level
+        if understanding_level not in ['complete', 'partial', 'none']:
+            raise HTTPException(status_code=400, detail="Invalid understanding level")
+        
+        # Get students with specified understanding level
+        students = db.get_students_by_understanding_level(thread_id, understanding_level)
+        
+        return {
+            "thread_id": thread_id,
+            "topic": thread["topic"],
+            "understanding_level": understanding_level,
+            "students": students
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching students: {str(e)}")
 
 # Analytics Endpoint
 

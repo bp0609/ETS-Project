@@ -29,9 +29,26 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             role TEXT NOT NULL CHECK(role IN ('student', 'teacher')),
+            email TEXT,
+            phone TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Migrate existing users table to add email and phone columns if they don't exist
+    try:
+        cursor.execute("SELECT email FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        # Column doesn't exist, add it
+        cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        print("✅ Added email column to users table")
+    
+    try:
+        cursor.execute("SELECT phone FROM users LIMIT 1")
+    except sqlite3.OperationalError:
+        # Column doesn't exist, add it
+        cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+        print("✅ Added phone column to users table")
     
     # Create announcements table
     cursor.execute("""
@@ -187,14 +204,14 @@ def get_thread(thread_id: int) -> Optional[Dict]:
     return None
 
 # User operations
-def create_user(name: str, role: str) -> int:
+def create_user(name: str, role: str, email: Optional[str] = None, phone: Optional[str] = None) -> int:
     """Create a new user"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO users (name, role) VALUES (?, ?)",
-            (name, role)
+            "INSERT INTO users (name, role, email, phone) VALUES (?, ?, ?, ?)",
+            (name, role, email, phone)
         )
         user_id = cursor.lastrowid
         conn.commit()
@@ -330,12 +347,27 @@ def get_students_who_understand(thread_id: int) -> List[Dict]:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT u.id, u.name
+        SELECT u.id, u.name, u.email, u.phone
         FROM topic_polls tp
         JOIN users u ON tp.student_id = u.id
         WHERE tp.thread_id = ? AND tp.understanding_level = 'complete'
         ORDER BY u.name ASC
     """, (thread_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_students_by_understanding_level(thread_id: int, understanding_level: str) -> List[Dict]:
+    """Get list of students who selected a specific understanding level for a topic"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.id, u.name, u.email, u.phone
+        FROM topic_polls tp
+        JOIN users u ON tp.student_id = u.id
+        WHERE tp.thread_id = ? AND tp.understanding_level = ?
+        ORDER BY u.name ASC
+    """, (thread_id, understanding_level))
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]

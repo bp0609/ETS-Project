@@ -5,6 +5,8 @@ import { useUser } from '../context/UserContext';
 
 const SignupPage = () => {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -23,10 +25,20 @@ const SignupPage = () => {
       return;
     }
 
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!phone.trim() || phone.trim().length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits)');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
-    const result = await signup(name.trim());
+    const result = await signup(name.trim(), email.trim(), phone.trim());
     
     if (result.success) {
       navigate('/home');
@@ -76,6 +88,44 @@ const SignupPage = () => {
               />
               <p className="mt-2 text-sm text-gray-500">
                 This will be displayed in discussions
+              </p>
+            </div>
+
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                disabled={loading}
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                Your contact email for collaboration
+              </p>
+            </div>
+
+            {/* Phone Input */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number *
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter your phone number"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                disabled={loading}
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                Your contact number for peer help
               </p>
             </div>
 

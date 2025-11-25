@@ -2,6 +2,9 @@ import React from 'react';
 import { Calendar, FileText, Clock, Download, Eye } from 'lucide-react';
 
 const AnnouncementFeed = ({ announcements }) => {
+  // Get API base URL dynamically (same as api.js logic)
+  const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+
   const formatDate = (dateString) => {
     // The database stores time in IST format already (YYYY-MM-DD HH:MM:SS)
     // We just need to parse and display it
@@ -22,12 +25,12 @@ const AnnouncementFeed = ({ announcements }) => {
 
   const handleViewPDF = (announcementId) => {
     // Open in new tab without triggering download
-    window.open(`http://localhost:8000/api/announcements/${announcementId}/pdf?download=false`, '_blank');
+    window.open(`${API_BASE_URL}/api/announcements/${announcementId}/pdf?download=false`, '_blank');
   };
 
   const handleDownloadPDF = (announcementId, filename) => {
     // Trigger download
-    window.open(`http://localhost:8000/api/announcements/${announcementId}/pdf?download=true`, '_blank');
+    window.open(`${API_BASE_URL}/api/announcements/${announcementId}/pdf?download=true`, '_blank');
   };
 
   if (announcements.length === 0) {
